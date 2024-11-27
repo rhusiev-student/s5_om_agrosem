@@ -83,7 +83,7 @@ for similar_code_radius, same_nom in [
     print(f"{similar_code_radius=}, {same_nom=}")
     mse = 0
     percentagewise_bad = 0
-    i = 0
+    count = 0
     for index, row in agrosem_csv.iterrows():
         if same_nom == 1:
             similar = get_same_nom_1(row, agrosem_csv)
@@ -100,6 +100,6 @@ for similar_code_radius, same_nom in [
                 predicted_sales = predict_month_using_similar(i, row, similar)
             mse += (predicted_sales - actual_sales) ** 2
             percentagewise_bad += (abs(predicted_sales - actual_sales) + 0.01) / (actual_sales + 0.01)
-            i += 1
-    print("MSE:", mse / i)
-    print("Percentagewise bad:", percentagewise_bad / i)
+            count += 1
+    print("MSE:", mse / count)
+    print("Percentagewise bad:", percentagewise_bad / count)
