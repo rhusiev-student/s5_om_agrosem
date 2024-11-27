@@ -1,4 +1,4 @@
-first add the csv to `data/agrosem.csv`
+first add the csv to `data/agrosem.csv` and install dependencies (`pip install -r requirements.txt`, possibly in venv)
 
 then run `preprocess.py`
 
