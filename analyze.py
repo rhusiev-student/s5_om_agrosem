@@ -1,13 +1,46 @@
+"""
+Файл, в якому реалізовані різні алгоритми визначення кількості товару,
+яку потрібно закупити для наявності на складі.
+"""
+
 import pandas as pd
 
 
 def get_same_nom_1(row: pd.Series, csv: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ця функція спершу викликає `get_same_nom_2` для фільтрації DataFrame `csv`
+    за номенклатурною групою 2-го рівня. Потім додатково звужує результат,
+    залишаючи лише ті рядки, у яких номенклатурна група 1-го рівня також збігається
+    зі значенням у переданому рядку `row`.
+
+    Аргументи:
+        row (pd.Series): Рядок, який містить значення для фільтрації.
+        csv (pd.DataFrame): DataFrame, що містить товари з номенклатурними групами.
+
+    Повертає:
+        pd.DataFrame: Підтаблиця, яка включає тільки ті рядки, у яких значення
+                      у колонках "Номенклатурна гр 1 рівень" і "Номенклатурна гр 2 рівень"
+                      збігаються із `row`.
+    """
     nom_1 = row["Номенклатурна гр 1 рівень"]
     same_nom_2 = get_same_nom_2(row, csv)
     return same_nom_2[same_nom_2["Номенклатурна гр 1 рівень"] == nom_1]
 
 
 def get_same_nom_2(row: pd.Series, csv: pd.DataFrame) -> pd.DataFrame:
+    """
+    Порівнює рядки у яких значення у колонці "Номенклатурна гр 2 рівень"
+    у таблиці csv
+    співпадають із значеннями "Номенклатурна гр 2 рівень" у рядку row.
+    
+    Аргументи:
+        row (pd.Series): Рядок, який містить значення для фільтрації.
+        csv (pd.DataFrame): DataFrame, що містить товари з номенклатурними групами.
+
+    Повертає:
+        pd.DataFrame: Підтаблиця, яка включає тільки ті рядки, у яких значення
+                      у колонці "Номенклатурна гр 2 рівень" збігається із `row`.
+    """
     nom_2 = row["Номенклатурна гр 2 рівень"]
     return csv[csv["Номенклатурна гр 2 рівень"] == nom_2]
 
@@ -15,6 +48,21 @@ def get_same_nom_2(row: pd.Series, csv: pd.DataFrame) -> pd.DataFrame:
 def get_similar_critical_code(
     row: pd.Series, csv: pd.DataFrame, radius: int
 ) -> pd.DataFrame:
+    """
+    Ця функція фільтрує переданий csv у яких значення в колонці 
+    "MEDIAN of Critical Code" знаходяться в межах переданого radius 
+    від заданого значення в рядку row.
+    
+    Аругменти:
+        row (pd.Series): Рядок, який містить значення для фільтрації.
+        csv (pd.DataFrame): DataFrame, що містить товари з номенклатурними групами.
+        radius (int): Радіус діапазону "MEDIAN of Critical Code",
+        що використовується для фільтрації
+        
+    Повертає:
+        pd.DataFrame: DataFrame, який містить всі рядки з csv, 
+        у яких значення "MEDIAN of Critical Code" знаходяться в межах заданого радіусу.
+    """
     code = row["MEDIAN of Critical Code"]
     lower_bound = int(code) - radius
     upper_bound = int(code) + radius
@@ -24,6 +72,19 @@ def get_similar_critical_code(
 def predict_month_using_similar(
     month_ago: int, row: pd.Series, similar: pd.DataFrame
 ) -> float:
+    """
+    Функція виконує прогнозування продажів для вказаного місяця month_ago
+    на основі записів із переданої таблиці даних similar для запису row.
+    
+    Аргументи:
+        month_ago (int): Місяць, для якого робиться передбачення продажів
+        row (pd.Series): Рядок, для якого робиться прогноз
+        similar (pd.DataFrame): Таблиця даних, що містить записи посортовані за 
+            нуменклатурними групами 1 чи 1 та 2.
+        
+    Повертає:
+        float: прогнозоване число продажів для місяці month_ago.
+    """
     similar = similar[
         (similar[f"Sales {month_ago+12} months ago"] > 0)
         & (similar[f"Sales {month_ago+13} months ago"] > 0)
@@ -37,8 +98,18 @@ def predict_month_using_similar(
     mean_diff = similar_diff.mean()
     return mean_diff * (row[f"Sales {month_ago+1} months ago"] + 0.01)
 
-
 def predict_month_using_self(month_ago: int, row: pd.Series) -> float:
+    """
+    Функція, що обчислює число продажів для місяця month_ago
+    на базі попередніх записів таблиці row.
+    
+    Аргументи:
+        month_ago (int): Місяць, для якого робиться передбачення продажів
+        row (pd.Series): Рядок, для якого робиться передбачення продажів.
+        
+    Повертає:
+        float: прогнозоване число продажів для місяці month_ago.
+    """
     year_ago = row[f"Sales {month_ago+12} months ago"]
     year_ago1 = row[f"Sales {month_ago+13} months ago"]
     if (
@@ -60,7 +131,7 @@ def predict_month_using_self(month_ago: int, row: pd.Series) -> float:
 
 agrosem_csv = pd.read_csv("data/agrosem_csv_highprice_highpriority.csv", sep=",")
 
-for similar_code_radius, same_nom in [
+lst_radius_nomenclature = [
     (0, 0),
     (0, 1),
     (0, 2),
@@ -79,7 +150,12 @@ for similar_code_radius, same_nom in [
     (25, 0),
     (25, 1),
     (25, 2),
-]:
+]
+
+for similar_code_radius, same_nom in lst_radius_nomenclature:
+    print(" ")
+    print("Start-------------")
+    print(" ")
     print(f"{similar_code_radius=}, {same_nom=}")
     mse = 0
     mae = 0
@@ -103,3 +179,6 @@ for similar_code_radius, same_nom in [
             count += 1
     print("MSE:", mse / count)
     print("MAE:", mae / count)
+    print(" ")
+    print("End---------------")
+    print(" ")

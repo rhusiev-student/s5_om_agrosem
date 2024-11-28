@@ -1,3 +1,10 @@
+"""
+Файл, який ділить товар на 4 категорії та записує їх у відповідіні файли:
+високі продажі+критична наявність -> agrosem_csv_highprice_highpriority
+високі продажі+некритична наявність -> agrosem_csv_highprice_lowpriority
+невисокі продажі+критична наявність -> agrosem_csv_lowprice_highpriority
+невисокі продажі+некритична наявність -> agrosem_csv_lowprice_lowpriority
+"""
 import pandas as pd
 
 agrosem_csv = pd.read_csv("data/agrosem_dedup.csv", sep=",")
@@ -6,8 +13,9 @@ agrosem_csv = pd.read_csv("data/agrosem_dedup.csv", sep=",")
 agrosem_csv["Median sales a moths"] = agrosem_csv[
     [f"Sales {i} + 12k months ago" for i in range(1, 13)]
 ].median(axis=1)
-agrosem_csv_highprice = agrosem_csv[agrosem_csv["Median sales a moths"] > 300]
-agrosem_csv_lowprice = agrosem_csv[agrosem_csv["Median sales a moths"] <= 300]
+
+agrosem_csv_highprice = agrosem_csv[agrosem_csv["Median sales a moths"] > 300] # >15000?
+agrosem_csv_lowprice = agrosem_csv[agrosem_csv["Median sales a moths"] <= 300] # <15000?
 
 agrosem_csv_highprice_highpriority = agrosem_csv_highprice[
     agrosem_csv_highprice["MEDIAN of Critical Code"] <= 21

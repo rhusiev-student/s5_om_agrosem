@@ -1,3 +1,6 @@
+"""
+Код, який додає нові стовпці до таблиці із даними для подальшої роботи
+"""
 import pandas as pd
 import re
 
@@ -28,8 +31,18 @@ agrosem_csv = agrosem_csv.groupby(
     | {col: "sum" for col in agrosem_csv.columns if col.startswith("SUM")}
 )
 
-
-def rename_sales_columns(df):
+def rename_sales_columns(df:pd.DataFrame) -> pd.DataFrame:
+    """
+    Функція, що перейменовує та заповнює колонки для кожного місяця 
+    для хітів та продажів
+    
+    Аргументи:
+        df (pd.DataFrame): Таблиця даних, в яких нам потрібно перейменувати 
+                            колонки
+    
+    Повертає: 
+        pd.DataFrame: Кфнцева таблиця із перейменованими колонками
+    """
     df_renamed = df.copy()
 
     for col in df_renamed.columns:
