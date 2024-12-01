@@ -152,6 +152,29 @@ lst_radius_nomenclature = [
     (25, 2),
 ]
 
+# Додаємо нову функцію для розрахунку кількості товарів, які потрібно дозамовити.
+def calculate_purchase_requirements(row: pd.Series, predicted_sales: float) -> float:
+    """
+    Розраховує кількість товарів, які потрібно дозамовити, щоб задовольнити прогнозовані продажі.
+    
+    Аргументи:
+        row (pd.Series): Рядок з інформацією про товар.
+        predicted_sales (float): Прогнозовані продажі на наступний місяць.
+    
+    Повертає:
+        float: Кількість товару, яку потрібно дозамовити.
+    """
+    available_stock = row["SUM of Доступний залишок на складі"]
+    reserved_stock = row["SUM of Зарезервовано на складі"]
+    total_available = available_stock - reserved_stock
+    purchase_quantity = max(0, predicted_sales - total_available)
+    return purchase_quantity
+
+
+# Ініціалізація загального списку для об'єднання всіх записів.
+all_purchase_plans = []
+
+# Основний цикл із записом усіх місяців у спільний файл.
 for similar_code_radius, same_nom in lst_radius_nomenclature:
     print(" ")
     print("Start-------------")
@@ -160,6 +183,7 @@ for similar_code_radius, same_nom in lst_radius_nomenclature:
     mse = 0
     mae = 0
     count = 0
+
     for index, row in agrosem_csv.iterrows():
         if same_nom == 1:
             similar = get_same_nom_1(row, agrosem_csv)
@@ -168,7 +192,8 @@ for similar_code_radius, same_nom in lst_radius_nomenclature:
         else:
             similar = agrosem_csv
         similar = get_similar_critical_code(row, similar, similar_code_radius)
-        for i in range(1, 13):
+        
+        for i in range(1, 13):  # Прогноз для 12 місяців
             actual_sales = float(row[f"Sales {i} months ago"])
             if not similar_code_radius and not same_nom:
                 predicted_sales = predict_month_using_self(i, row)
@@ -177,8 +202,30 @@ for similar_code_radius, same_nom in lst_radius_nomenclature:
             mse += (predicted_sales - actual_sales) ** 2
             mae += abs(predicted_sales - actual_sales)
             count += 1
+            
+            # Розраховуємо, скільки потрібно дозамовити.
+            purchase_quantity = calculate_purchase_requirements(row, predicted_sales)
+            if purchase_quantity > 0:
+                all_purchase_plans.append(
+                    {
+                        "Назва": row["Назва"],
+                        "Номенклатурна гр 1 рівень": row["Номенклатурна гр 1 рівень"],
+                        "Номенклатурна гр 2 рівень": row["Номенклатурна гр 2 рівень"],
+                        "Місяць": f"Month {i}",
+                        "Radius": similar_code_radius,
+                        "Same Nom": same_nom,
+                         "Потрібно закупити": purchase_quantity,
+                    }
+                )
+
     print("MSE:", mse / count)
     print("MAE:", mae / count)
     print(" ")
     print("End---------------")
     print(" ")
+
+# Після завершення записуємо всі плани закупівель у спільний файл.
+if all_purchase_plans:
+    combined_df = pd.DataFrame(all_purchase_plans)
+    combined_df.to_csv("all_purchase_plans.csv", index=False, encoding="utf-8-sig")
+    print("Всі плани закупівель записано у файл: all_purchase_plans.csv")
