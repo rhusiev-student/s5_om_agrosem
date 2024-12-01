@@ -4,6 +4,7 @@
 """
 
 import pandas as pd
+import math
 
 
 def get_same_nom_1(row: pd.Series, csv: pd.DataFrame) -> pd.DataFrame:
@@ -32,7 +33,7 @@ def get_same_nom_2(row: pd.Series, csv: pd.DataFrame) -> pd.DataFrame:
     Порівнює рядки у яких значення у колонці "Номенклатурна гр 2 рівень"
     у таблиці csv
     співпадають із значеннями "Номенклатурна гр 2 рівень" у рядку row.
-    
+
     Аргументи:
         row (pd.Series): Рядок, який містить значення для фільтрації.
         csv (pd.DataFrame): DataFrame, що містить товари з номенклатурними групами.
@@ -49,18 +50,18 @@ def get_similar_critical_code(
     row: pd.Series, csv: pd.DataFrame, radius: int
 ) -> pd.DataFrame:
     """
-    Ця функція фільтрує переданий csv у яких значення в колонці 
-    "MEDIAN of Critical Code" знаходяться в межах переданого radius 
+    Ця функція фільтрує переданий csv у яких значення в колонці
+    "MEDIAN of Critical Code" знаходяться в межах переданого radius
     від заданого значення в рядку row.
-    
+
     Аругменти:
         row (pd.Series): Рядок, який містить значення для фільтрації.
         csv (pd.DataFrame): DataFrame, що містить товари з номенклатурними групами.
         radius (int): Радіус діапазону "MEDIAN of Critical Code",
         що використовується для фільтрації
-        
+
     Повертає:
-        pd.DataFrame: DataFrame, який містить всі рядки з csv, 
+        pd.DataFrame: DataFrame, який містить всі рядки з csv,
         у яких значення "MEDIAN of Critical Code" знаходяться в межах заданого радіусу.
     """
     code = row["MEDIAN of Critical Code"]
@@ -75,13 +76,13 @@ def predict_month_using_similar(
     """
     Функція виконує прогнозування продажів для вказаного місяця month_ago
     на основі записів із переданої таблиці даних similar для запису row.
-    
+
     Аргументи:
         month_ago (int): Місяць, для якого робиться передбачення продажів
         row (pd.Series): Рядок, для якого робиться прогноз
-        similar (pd.DataFrame): Таблиця даних, що містить записи посортовані за 
+        similar (pd.DataFrame): Таблиця даних, що містить записи посортовані за
             нуменклатурними групами 1 чи 1 та 2.
-        
+
     Повертає:
         float: прогнозоване число продажів для місяці month_ago.
     """
@@ -98,15 +99,16 @@ def predict_month_using_similar(
     mean_diff = similar_diff.mean()
     return mean_diff * (row[f"Sales {month_ago+1} months ago"] + 0.01)
 
+
 def predict_month_using_self(month_ago: int, row: pd.Series) -> float:
     """
     Функція, що обчислює число продажів для місяця month_ago
     на базі попередніх записів таблиці row.
-    
+
     Аргументи:
         month_ago (int): Місяць, для якого робиться передбачення продажів
         row (pd.Series): Рядок, для якого робиться передбачення продажів.
-        
+
     Повертає:
         float: прогнозоване число продажів для місяці month_ago.
     """
@@ -152,15 +154,15 @@ lst_radius_nomenclature = [
     (25, 2),
 ]
 
-# Додаємо нову функцію для розрахунку кількості товарів, які потрібно дозамовити.
+
 def calculate_purchase_requirements(row: pd.Series, predicted_sales: float) -> float:
     """
     Розраховує кількість товарів, які потрібно дозамовити, щоб задовольнити прогнозовані продажі.
-    
+
     Аргументи:
         row (pd.Series): Рядок з інформацією про товар.
         predicted_sales (float): Прогнозовані продажі на наступний місяць.
-    
+
     Повертає:
         float: Кількість товару, яку потрібно дозамовити.
     """
@@ -171,10 +173,8 @@ def calculate_purchase_requirements(row: pd.Series, predicted_sales: float) -> f
     return purchase_quantity
 
 
-# Ініціалізація загального списку для об'єднання всіх записів.
 all_purchase_plans = []
 
-# Основний цикл із записом усіх місяців у спільний файл.
 for similar_code_radius, same_nom in lst_radius_nomenclature:
     print(" ")
     print("Start-------------")
@@ -192,8 +192,8 @@ for similar_code_radius, same_nom in lst_radius_nomenclature:
         else:
             similar = agrosem_csv
         similar = get_similar_critical_code(row, similar, similar_code_radius)
-        
-        for i in range(1, 13):  # Прогноз для 12 місяців
+
+        for i in range(1, 13):
             actual_sales = float(row[f"Sales {i} months ago"])
             if not similar_code_radius and not same_nom:
                 predicted_sales = predict_month_using_self(i, row)
@@ -202,8 +202,7 @@ for similar_code_radius, same_nom in lst_radius_nomenclature:
             mse += (predicted_sales - actual_sales) ** 2
             mae += abs(predicted_sales - actual_sales)
             count += 1
-            
-            # Розраховуємо, скільки потрібно дозамовити.
+
             purchase_quantity = calculate_purchase_requirements(row, predicted_sales)
             if purchase_quantity > 0:
                 all_purchase_plans.append(
@@ -214,7 +213,7 @@ for similar_code_radius, same_nom in lst_radius_nomenclature:
                         "Місяць": f"Month {i}",
                         "Radius": similar_code_radius,
                         "Same Nom": same_nom,
-                         "Потрібно закупити": purchase_quantity,
+                        "Потрібно закупити": math.ceil(purchase_quantity),
                     }
                 )
 
@@ -224,8 +223,9 @@ for similar_code_radius, same_nom in lst_radius_nomenclature:
     print("End---------------")
     print(" ")
 
-# Після завершення записуємо всі плани закупівель у спільний файл.
 if all_purchase_plans:
     combined_df = pd.DataFrame(all_purchase_plans)
-    combined_df.to_csv("all_purchase_plans.csv", index=False, encoding="utf-8-sig")
+    combined_df.to_csv(
+        "./data/all_purchase_plans.csv", index=False, encoding="utf-8-sig"
+    )
     print("Всі плани закупівель записано у файл: all_purchase_plans.csv")
