@@ -29,6 +29,6 @@ for discount in discounts:
 
 results_df = pd.DataFrame(results)
 
-output_filename = "./data/critical_coefficients.csv"
+output_filename = "./results/critical_coefficients.csv"
 results_df.to_csv(output_filename, index=False)
-print(f"Результати збережено у файл: {output_filename}")
+print(f"Результати збережено у файл: {output_filename} у папці results.")

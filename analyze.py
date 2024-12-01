@@ -176,10 +176,10 @@ def calculate_purchase_requirements(row: pd.Series, predicted_sales: float) -> f
 all_purchase_plans = []
 
 for similar_code_radius, same_nom in lst_radius_nomenclature:
-    print(" ")
-    print("Start-------------")
-    print(" ")
-    print(f"{similar_code_radius=}, {same_nom=}")
+    # print(" ")
+    # print("Start-------------")
+    # print(" ")
+    # print(f"{similar_code_radius=}, {same_nom=}")
     mse = 0
     mae = 0
     count = 0
@@ -217,15 +217,15 @@ for similar_code_radius, same_nom in lst_radius_nomenclature:
                     }
                 )
 
-    print("MSE:", mse / count)
-    print("MAE:", mae / count)
-    print(" ")
-    print("End---------------")
-    print(" ")
+    # print("MSE:", mse / count)
+    # print("MAE:", mae / count)
+    # print(" ")
+    # print("End---------------")
+    # print(" ")
 
 if all_purchase_plans:
     combined_df = pd.DataFrame(all_purchase_plans)
     combined_df.to_csv(
-        "./data/all_purchase_plans.csv", index=False, encoding="utf-8-sig"
+        "./results/all_purchase_plans.csv", index=False, encoding="utf-8-sig"
     )
-    print("Всі плани закупівель записано у файл: all_purchase_plans.csv")
+    print("Всі плани закупівель записано у файл: all_purchase_plans.csv в папці results")
