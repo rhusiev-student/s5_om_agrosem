@@ -13,7 +13,7 @@ for discount in discounts:
     for _, row in data.iterrows():
         if row["SUM of Доступний залишок на складі"] > 0:
             critical_coefficient = (row["MAX of Прайс"] * (1 - discount)) / row[
-                "SUM of Доступний залишок на складі"
+                "MAX of Прайс"
             ]
         else:
             critical_coefficient = float("inf")
