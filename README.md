@@ -1,6 +1,6 @@
 # To run the analysis you need to:
 
-1. first add the csv to `data/agrosem.csv` 
+1. first add the agrosem.csv to `data/agrosem.csv` 
 2. type in terminal `python main_script.py`
 
 
@@ -11,11 +11,11 @@ The main purpose of all the scripts and csv files, using `main_script.py`
 
 ### 1: Installing all dependencies 
 
-In this file requirements.txt we have all requirements that we need in this project
+In file requirements.txt we have all requirements that we need in this project
 
 ### 2: Preprocess.py 
 
-In this file we rename columns and add new columns for more effective analysis. For this we use function `rename_sales_columns` [A function that renames and fills columns for each month for hits and sales] and Code that adds new columns to a table of data for further processing
+In this file we calculate the SUM of sales, MEAN of critical code, and MAX price for each group. Afterwards we rename columns and add new columns for more effective analysis. For this we use function `rename_sales_columns` [A function that renames and fills columns for each month for hits and sales] and Code that adds new columns to a table of data for further processing
 
 ### 3. Plot_each_months.py
 
