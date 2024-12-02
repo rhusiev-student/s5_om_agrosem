@@ -42,4 +42,4 @@ output_df = df[
 
 output_df.to_csv("./results/analysis_results_1_3.csv", index=False)
 
-print("Результати збережено у файл analysis_results.csv у папці results.")
+print("Результати збережено у файл analysis_results_1_3.csv у папці results.")

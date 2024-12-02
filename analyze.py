@@ -5,6 +5,7 @@
 
 import pandas as pd
 import math
+import os
 
 
 def get_same_nom_1(row: pd.Series, csv: pd.DataFrame) -> pd.DataFrame:
@@ -223,9 +224,19 @@ for similar_code_radius, same_nom in lst_radius_nomenclature:
     # print("End---------------")
     # print(" ")
 
-if all_purchase_plans:
+# Створити папку, якщо її не існує
+folder_name = "results"
+if not os.path.exists(folder_name):
+    os.makedirs(folder_name)
+
+file_path = os.path.join(folder_name, "all_purchase_plans.csv")
+
+# Запис у файл .csv
+with open(file_path, mode="w", newline="", encoding="utf-8") as file:
+   if all_purchase_plans:
     combined_df = pd.DataFrame(all_purchase_plans)
     combined_df.to_csv(
         "./results/all_purchase_plans.csv", index=False, encoding="utf-8-sig"
     )
-    print("Всі плани закупівель записано у файл: all_purchase_plans.csv в папці results")
+
+print("Всі плани закупівель записано у файл: all_purchase_plans.csv в папці results")
