@@ -47,11 +47,15 @@ The results of calculating the required number of products for the order are in 
 
 ### 5. Analyze_1_2.py
 
+High sales (price*quantity) and non-critical availability group (50-99)
+
 A file that calculates critical availability ratios based on different discount sizes
 
 We save our results in file `./results/critical_coefficients.csv`.
 
 ### 6. Analyze_1_3.py
+
+Low sales (price*quantity) and critical availability group (11-21)
 
 This file analyzes the criticality of the product with lowprice and highpriority.
 
