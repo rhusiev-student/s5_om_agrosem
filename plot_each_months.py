@@ -9,10 +9,10 @@ agrosem_csv = pd.read_csv("data/agrosem_dedup.csv", sep=",")
 
 plt.figure(figsize=(10, 8))
 
+total = [0] * 12
+
 for index, row in agrosem_csv.iterrows():
-    plt.plot(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-        [
+    vals = [
             row["Sales 1 + 12k months ago"],
             row["Sales 2 + 12k months ago"],
             row["Sales 3 + 12k months ago"],
@@ -25,8 +25,17 @@ for index, row in agrosem_csv.iterrows():
             row["Sales 10 + 12k months ago"],
             row["Sales 11 + 12k months ago"],
             row["Sales 12 + 12k months ago"],
-        ],
+        ]
+    total = [total[i] + vals[i] for i in range(len(vals))]
+    plt.plot(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        vals
     )
+total = [total[i] for i in range(len(total))]
+# plt.plot(
+#     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+#     total
+# )
 plt.xlabel("Місяці року")
 plt.ylabel("Кількість продажів")
 plt.title("Динаміка продажів за місяцями (натисніть на хрестик, щоб продовжити роботу).")
