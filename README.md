@@ -13,15 +13,15 @@ The main purpose of all the scripts and csv files, using `main_script.py`
 
 In file requirements.txt we have all requirements that we need in this project
 
-### 2: Preprocess.py 
+### 2: preprocess.py 
 
 In this file we calculate the SUM of sales, MEAN of critical code, and MAX price for each group. Afterwards we rename columns and add new columns for more effective analysis. For this we use function `rename_sales_columns` [A function that renames and fills columns for each month for hits and sales] and Code that adds new columns to a table of data for further processing
 
-### 3. Plot_each_months.py
+### 3. plot_each_months.py
 
 A file that plots sales for each product in a table by month. We see plot during the run of the main_script.py
 
-### 4. Analyze.py
+### 4. analyze.py
 
 In this file we analyze data with these functions: 
 
@@ -45,7 +45,7 @@ In this file we analyze data with these functions:
 
 The results of calculating the required number of products for the order are in the last column of all_purchase_plans.csv in the results folder."
 
-### 5. Analyze_1_2.py
+### 5. analyze_1_2.py
 
 High sales (price*quantity) and non-critical availability group (50-99)
 
@@ -53,7 +53,7 @@ A file that calculates critical availability ratios based on different discount 
 
 We save our results in file `./results/critical_coefficients.csv`.
 
-### 6. Analyze_1_3.py
+### 6. analyze_1_3.py
 
 Low sales (price*quantity) and critical availability group (11-21)
 
@@ -62,3 +62,9 @@ This file analyzes the criticality of the product with lowprice and highpriority
 We save our results in file `./results/analysis_results_1_3.csv`.
 
 Our results can be find in folder `results`.
+
+### 7. get_predictions.py
+
+Get predictions on how much to buy for the next month and for three months later.
+
+We save our results in file `./results/predictions.csv`
