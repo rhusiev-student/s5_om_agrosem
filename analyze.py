@@ -7,6 +7,8 @@ import pandas as pd
 import math
 import os
 
+import statistics
+
 
 def get_same_nom_1(row: pd.Series, csv: pd.DataFrame) -> pd.DataFrame:
     """
@@ -132,31 +134,49 @@ def predict_month_using_self(month_ago: int, row: pd.Series) -> float:
     return year_ago / year_ago1 * month_ago
 
 
-agrosem_csv = pd.read_csv("data/agrosem_csv_highprice_highpriority.csv", sep=",")
-
-lst_radius_nomenclature = [
-    (0, 0),
-    (0, 1),
-    (0, 2),
-    (5, 0),
-    (5, 1),
-    (5, 2),
-    (10, 0),
-    (10, 1),
-    (10, 2),
-    (15, 0),
-    (15, 1),
-    (15, 2),
-    (20, 0),
-    (20, 1),
-    (20, 2),
-    (25, 0),
-    (25, 1),
-    (25, 2),
-]
+def predict_three_month_ahead_using_similar(
+    month_ago: int, row: pd.Series, similar: pd.DataFrame
+) -> float:
+    similar = similar[
+        (similar[f"Sales {month_ago+12} months ago"] > 0)
+        & (similar[f"Sales {month_ago+15} months ago"] > 0)
+    ]
+    if similar.empty:
+        return predict_three_month_ahead_using_self(month_ago, row)
+    similar_diff = (
+        similar[f"Sales {month_ago+12} months ago"]
+        / similar[f"Sales {month_ago+15} months ago"]
+    )
+    mean_diff = similar_diff.mean()
+    return mean_diff * (row[f"Sales {month_ago+3} months ago"] + 0.01)
 
 
-def calculate_purchase_requirements(row: pd.Series, predicted_sales: float) -> float:
+def predict_three_month_ahead_using_self(month_ago: int, row: pd.Series) -> float:
+    year_ago = row[f"Sales {month_ago+12} months ago"]
+    year_ago1 = row[f"Sales {month_ago+15} months ago"]
+    if year_ago == 0 or year_ago1 == 0:
+        return 0
+    return year_ago / year_ago1 * row[f"Sales {month_ago+3} months ago"]
+
+
+def get_std_for_month(month_ago: int, row: pd.Series) -> float:
+    i = 1
+    stats = []
+    while True:
+        if f"Sales {month_ago + 12 * i} months ago" in row:
+            stats.append(row[f"Sales {month_ago + 12 * i} months ago"])
+            i += 1
+            continue
+        break
+    return statistics.stdev(stats)
+
+
+def get_inv_norm(x: float, mean: float, std: float) -> float:
+    normal = statistics.NormalDist(mean, std)
+    return normal.inv_cdf(x)
+
+
+def calculate_purchase_requirements(row: pd.Series, predicted_sales: float, std: float) -> float:
     """
     Розраховує кількість товарів, які потрібно дозамовити, щоб задовольнити прогнозовані продажі.
 
@@ -170,73 +190,134 @@ def calculate_purchase_requirements(row: pd.Series, predicted_sales: float) -> f
     available_stock = row["SUM of Доступний залишок на складі"]
     reserved_stock = row["SUM of Зарезервовано на складі"]
     total_available = available_stock - reserved_stock
+    predicted_sales = get_inv_norm(0.99, predicted_sales, std)
     purchase_quantity = max(0, predicted_sales - total_available)
     return purchase_quantity
 
 
-all_purchase_plans = []
+if __name__ == "__main__":
+    agrosem_csv = pd.read_csv("data/agrosem_csv_highprice_highpriority.csv", sep=",")
 
-for similar_code_radius, same_nom in lst_radius_nomenclature:
-    # print(" ")
-    # print("Start-------------")
-    # print(" ")
-    # print(f"{similar_code_radius=}, {same_nom=}")
-    mse = 0
-    mae = 0
-    count = 0
+    lst_radius_nomenclature = [
+        (0, 0),
+        (0, 1),
+        (0, 2),
+        (5, 0),
+        (5, 1),
+        (5, 2),
+        (10, 0),
+        (10, 1),
+        (10, 2),
+        (15, 0),
+        (15, 1),
+        (15, 2),
+        (20, 0),
+        (20, 1),
+        (20, 2),
+        (25, 0),
+        (25, 1),
+        (25, 2),
+    ]
 
-    for index, row in agrosem_csv.iterrows():
-        if same_nom == 1:
-            similar = get_same_nom_1(row, agrosem_csv)
-        elif same_nom == 2:
-            similar = get_same_nom_2(row, agrosem_csv)
-        else:
-            similar = agrosem_csv
-        similar = get_similar_critical_code(row, similar, similar_code_radius)
+    all_purchase_plans = []
+    all_purchase_plans_3_months = []
 
-        for i in range(1, 13):
-            actual_sales = float(row[f"Sales {i} months ago"])
-            if not similar_code_radius and not same_nom:
-                predicted_sales = predict_month_using_self(i, row)
+    for similar_code_radius, same_nom in lst_radius_nomenclature:
+        print(" ")
+        print("Start-------------")
+        print(" ")
+        print(f"{similar_code_radius=}, {same_nom=}")
+        mse = 0
+        mae = 0
+        mean_relative_error = 0
+        mse_3 = 0
+        mae_3 = 0
+        mean_relative_error_3 = 0
+        count = 0
+
+        for index, row in agrosem_csv.iterrows():
+            if same_nom == 1:
+                similar = get_same_nom_1(row, agrosem_csv)
+            elif same_nom == 2:
+                similar = get_same_nom_2(row, agrosem_csv)
             else:
-                predicted_sales = predict_month_using_similar(i, row, similar)
-            mse += (predicted_sales - actual_sales) ** 2
-            mae += abs(predicted_sales - actual_sales)
-            count += 1
+                similar = agrosem_csv
+            similar = get_similar_critical_code(row, similar, similar_code_radius)
 
-            purchase_quantity = calculate_purchase_requirements(row, predicted_sales)
-            if purchase_quantity > 0:
-                all_purchase_plans.append(
-                    {
-                        "Назва": row["Назва"],
-                        "Номенклатурна гр 1 рівень": row["Номенклатурна гр 1 рівень"],
-                        "Номенклатурна гр 2 рівень": row["Номенклатурна гр 2 рівень"],
-                        "Місяць": f"Month {i}",
-                        "Radius": similar_code_radius,
-                        "Same Nom": same_nom,
-                        "Потрібно закупити": math.ceil(purchase_quantity),
-                    }
+            for i in range(1, 13):
+                actual_sales = float(row[f"Sales {i} months ago"])
+                if not similar_code_radius and not same_nom:
+                    predicted_sales = predict_month_using_self(i, row)
+                    predicted_sales_3 = predict_three_month_ahead_using_self(i, row)
+                else:
+                    predicted_sales = predict_month_using_similar(i, row, similar)
+                    predicted_sales_3 = predict_three_month_ahead_using_similar(
+                        i, row, similar
+                    )
+                mse += (predicted_sales - actual_sales) ** 2
+                mae += abs(predicted_sales - actual_sales)
+                mean_relative_error += (
+                    abs(predicted_sales - actual_sales) / actual_sales
+                    if actual_sales
+                    else 1
                 )
+                mse_3 += (predicted_sales_3 - actual_sales) ** 2
+                mae_3 += abs(predicted_sales_3 - actual_sales)
+                mean_relative_error_3 += (
+                    abs(predicted_sales_3 - actual_sales) / actual_sales
+                    if actual_sales
+                    else 1
+                )
+                count += 1
 
-    # print("MSE:", mse / count)
-    # print("MAE:", mae / count)
-    # print(" ")
-    # print("End---------------")
-    # print(" ")
+                std = get_std_for_month(i, row)
 
-# Створити папку, якщо її не існує
-folder_name = "results"
-if not os.path.exists(folder_name):
-    os.makedirs(folder_name)
+                purchase_quantity = calculate_purchase_requirements(
+                    row, predicted_sales, std
+                )
+                purchase_quantity_3 = calculate_purchase_requirements(
+                    row, predicted_sales_3, std
+                )
+                if purchase_quantity > 0:
+                    all_purchase_plans.append(
+                        {
+                            "Назва": row["Назва"],
+                            "Номенклатурна гр 1 рівень": row[
+                                "Номенклатурна гр 1 рівень"
+                            ],
+                            "Номенклатурна гр 2 рівень": row[
+                                "Номенклатурна гр 2 рівень"
+                            ],
+                            "Місяць": f"Month {i}",
+                            "Radius": similar_code_radius,
+                            "Same Nom": same_nom,
+                            "Потрібно закупити": math.ceil(purchase_quantity),
+                        }
+                    )
 
-file_path = os.path.join(folder_name, "all_purchase_plans.csv")
+        print("MSE:", mse / count)
+        print("MAE:", mae / count)
+        print("Mean Relative Error:", mean_relative_error / count)
+        print("MSE_3:", mse_3 / count)
+        print("MAE_3:", mae_3 / count)
+        print("Mean Relative Error_3:", mean_relative_error_3 / count)
+        print(" ")
+        print("End---------------")
+        print(" ")
 
-# Запис у файл .csv
-with open(file_path, mode="w", newline="", encoding="utf-8") as file:
-   if all_purchase_plans:
-    combined_df = pd.DataFrame(all_purchase_plans)
-    combined_df.to_csv(
-        "./results/all_purchase_plans.csv", index=False, encoding="utf-8-sig"
+    folder_name = "results"
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+
+    file_path = os.path.join(folder_name, "all_purchase_plans.csv")
+
+    with open(file_path, mode="w", newline="", encoding="utf-8") as file:
+        if all_purchase_plans:
+            combined_df = pd.DataFrame(all_purchase_plans)
+            combined_df.to_csv(
+                "./results/all_purchase_plans.csv", index=False, encoding="utf-8-sig"
+            )
+
+    print(
+        "Всі плани закупівель записано у файл: all_purchase_plans.csv в папці results"
     )
-
-print("Всі плани закупівель записано у файл: all_purchase_plans.csv в папці results")

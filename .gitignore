@@ -1,5 +1,6 @@
 # private data of agrosem
 data/
+results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
